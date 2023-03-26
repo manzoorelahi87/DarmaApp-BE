@@ -169,7 +169,6 @@ app.delete('/user/:id', (req,res)=>{
 //Get All data
 app.get('/members', (req,res)=>{
 
-
     let qr =`select * from members`;
     db.query(qr, (err, result)=>{
 
@@ -185,6 +184,27 @@ app.get('/members', (req,res)=>{
         }
 
     });
+});
+
+//Get user data
+app.post('/members/search', (req,res)=>{
+let eMail = req.body.email;
+
+  let qr =`select id from members where email = '${eMail}'`;
+  db.query(qr, (err, result)=>{
+
+      if(err){
+          console.log(err, 'err')
+      }
+
+      if (result.length >0){
+          res.send({
+              message: 'All user data',
+              data: result
+          });
+      }
+
+  });
 });
 
 //Get single data
