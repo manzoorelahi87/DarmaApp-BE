@@ -96,7 +96,7 @@ app.post('/user', (req,res)=>{
         }
 
         res.send({
-            message: 'Data inserted'
+            message: 'User details inserted'
         })
 
     });
@@ -147,7 +147,7 @@ app.delete('/user/:id', (req,res)=>{
         }
 
         res.send({
-            message: 'Data deleted'
+            message: 'User deleted'
         })
 
     });
@@ -266,7 +266,7 @@ app.post('/profile', (req,res)=>{
         }
 
         res.send({
-            message: 'Data inserted'
+            message: 'User details inserted'
         })
 
     });
@@ -304,7 +304,7 @@ app.put('/profile/:id', (req,res)=>{
         }
 
           res.send({
-            message: 'Data updated'
+            message: 'User details updated'
         })
 
 
@@ -328,7 +328,7 @@ app.delete('/profile/:id', (req,res)=>{
         }
 
         res.send({
-            message: 'Data deleted'
+            message: 'User deleted'
         })
 
     });
@@ -347,7 +347,8 @@ app.post('/login', (req,res)=>{
    // checkemailid
    let chkemailid = `select * from users where email = '${email}'`;
    db.query(chkemailid, async (err, result) => {
-     if (err) throw err;if (result.length > 0) {
+     if (err) throw err;
+     if (result.length > 0) {
         let data = {
           name: result[0].name,
           email: result[0].email,
@@ -362,18 +363,18 @@ app.post('/login', (req,res)=>{
             status: true,
             token: token,
             result: data,
-            msg: "user login successful",
+            msg: "User Login Successful",
           });
         } else {
           res.send({
             status: false,
-            msg: "invalid user",
+            msg: "Invalid User",
           });
         }
       } else {
         res.send({
           status: false,
-          msg: "invalid email id",
+          msg: "Invalid Email ID",
         });
       }
     });
@@ -394,7 +395,7 @@ const name = req.body.name;
     if (result.length > 0) {
       res.send({
         status: false,
-        msg: "email id already exits",
+        msg: "Email ID already exits",
       });
     } else {
       // password decrypt
@@ -405,7 +406,7 @@ const name = req.body.name;
         if (err) throw err;
         res.send({
           status: true,
-          msg: "user register successful",
+          msg: "User Registered Successfully",
         });
       });
     }
