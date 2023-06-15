@@ -1,3 +1,0 @@
-user
-LAPTOP-V53O558B 
-Sunday, July 16, 2017  4:19:23 PM

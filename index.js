@@ -6,42 +6,12 @@ const mysql = require('mysql2');
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-// Added for file upload
-const multer = require("multer");
-const fs = require("fs");
-const maxSize = 2 * 1024 * 1024;
-global.__basedir = __dirname;
-
-const baseUrl = "http://localhost:3000/files/";
-
-const uploadFile = require("./middleware/upload");
-// let storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, __basedir + "/resources/static/assets/uploads/");
-//   },
-//   filename: (req, file, cb) => {
-//     console.log(file.originalname);
-//     cb(null, file.originalname);
-//   },
-// });
-
-// let uploadFile = multer({
-//   storage: storage,
-//   limits: { fileSize: maxSize },
-// }).single("file");
-
-// let uploadFileMiddleware = util.promisify(uploadFile);
-// module.exports = uploadFileMiddleware;
-
-//Added for file upload
-
-
 const app = express();
 
 app.use(cors());
 app.use(bodyparser.json());
 
-
+//****************** DATABASE ************************************************************************ */
 
 //database connection
 const db = mysql.createConnection({
@@ -61,146 +31,25 @@ db.connect(err => {
   console.log('Database connected');
 });
 
-//Get All data
-app.get('/user', (req, res) => {
-
-
-  let qr = `select * from user`;
-  db.query(qr, (err, result) => {
-
-    if (err) {
-      console.log(err, 'err')
-    }
-
-    if (result.length > 0) {
-      res.send({
-        message: 'All user data',
-        data: result
-      });
-    }
-
-  });
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
 });
 
-//Get single data
-app.get('/user/:id', (req, res) => {
-
-  let gID = req.params.id;
-  let qr = `select * from user where id = ${gID}`;
-
-  db.query(qr, (err, result) => {
-
-    if (err) {
-      console.log(err, 'err')
-    }
-
-    if (result.length > 0) {
-      res.send({
-        message: 'Get single data',
-        data: result
-      });
-    }
-    else {
-      res.send({
-        message: 'Data not found'
-      })
-    }
-
-  });
-
-});
-
-//Create data
-app.post('/user', (req, res) => {
-
-  let fullName = req.body.fullname;
-  let eMail = req.body.email;
-  let mb = req.body.mobile;
-
-  let qr = `insert into user (fullname, email, mobile) values ('${fullName}', '${eMail}', '${mb}')`;
-
-  db.query(qr, (err, result) => {
-
-    if (err) {
-      console.log(err, 'err')
-    }
-
-    res.send({
-      message: 'User details inserted'
-    })
-
-  });
-
-});
+//****************** DATABASE ************************************************************************ */
 
 
 
-// Update data
-app.put('/user/:id', (req, res) => {
-
-  let gID = req.params.id;
-  let fullName = req.body.fullname;
-  let eMail = req.body.email;
-  let mb = req.body.mobile;
-
-  let qr = `update user set fullname = '${fullName}', email = '${eMail}', mobile = '${mb}'
-              where id =${gID}`;
-
-  db.query(qr, (err, result) => {
-
-    if (err) {
-      console.log(err, 'err')
-    }
-
-    res.send({
-      message: 'Data updated'
-    })
-
-
-  });
-
-});
-
-
-
-//Delete single data
-app.delete('/user/:id', (req, res) => {
-
-  let qID = req.params.id;
-
-  let qr = `delete from user where id = '${qID}'`;
-
-  db.query(qr, (err, result) => {
-
-    if (err) {
-      console.log(err, 'err')
-    }
-
-    res.send({
-      message: 'User deleted'
-    })
-
-  });
-
-});
-
+//************************************** MEMBERS TABLE********************************************** */
 
 //Members table
 
 
-// //Check database connection
-// db.connect( err => {
-//     if(err){
-//         console.log(err, 'DB Error');
-//     }
-//     console.log('Database connected');
-// });
-
 //Get All data
 app.get('/members', (req, res) => {
 
-  let qr = `select * from members`;
-  db.query(qr, (err, result) => {
+  console.log("Fetch all user data");
+  let select_qr = `select * from members`;
+  db.query(select_qr, (err, result) => {
 
     if (err) {
       console.log(err, 'err')
@@ -216,41 +65,72 @@ app.get('/members', (req, res) => {
   });
 });
 
-//Get user data
+//Get user data based on email
 app.post('/members/search', (req, res) => {
   let eMail = req.body.email;
 
-  let qr = `select id from members where email = '${eMail}'`;
-  db.query(qr, (err, result) => {
+  console.log("Fetch specific user data");
+  let single_user_qr = `select id from members where email = '${eMail}'`;
+  db.query(single_user_qr, (err, result) => {
 
     if (err) {
       console.log(err, 'err')
     }
 
-    console.log(result, "#result")
     if (result.length > 0) {
       res.send({
-        message: 'All user data',
+        message: 'User data retreived',
         data: result
       });
     }
-    else{
+    else {
       res.send({
-        message: 'All user data',
-        data: result
+        status: false,
+        message: 'No user data found',
       });
     }
 
   });
 });
 
-//Get single data
+
+//Get user data based on unit, mobile, firstname or last name (Search feature)
+app.post('/members/searchAll', (req, res) => {
+  let searchText = req.body.searchText;
+
+  console.log("Search based on the search text");
+  let search_qr = `select * from members where unit = '${searchText}' OR mobile LIKE '%${searchText}%' OR firstname LIKE '%${searchText}%' OR lastname LIKE '%${searchText}%' `;
+  // console.log(search_qr);
+  db.query(search_qr, (err, result) => {
+
+    if (err) {
+      console.log(err, 'err')
+    }
+
+    // console.log(result, "#result")
+    if (result.length > 0) {
+      res.send({
+        message: 'Searched data fetched sucessfully',
+        data: result
+      });
+    }
+    else {
+      res.send({
+        message: 'No data found',
+      });
+    }
+
+  });
+});
+
+//Get single user based on his ID
 app.get('/profile/:id', (req, res) => {
 
   let gID = req.params.id;
-  let qr = `select * from members where id = ${gID}`;
+  let id_qr = `select * from members where id = ${gID}`;
 
-  db.query(qr, (err, result) => {
+  console.log("Search user based on his ID");
+  db.query(id_qr, (err, result) => {
 
     if (err) {
       console.log(err, 'err')
@@ -264,7 +144,7 @@ app.get('/profile/:id', (req, res) => {
     }
     else {
       res.send({
-        message: 'Data not found'
+        message: 'No data found'
       })
     }
 
@@ -272,15 +152,16 @@ app.get('/profile/:id', (req, res) => {
 
 });
 
-//Create data
+//Insert into members table
 app.post('/profile', (req, res) => {
-  console.log("Inside profile")
+  console.log("Create members");
 
   let firstName = req.body.firstName;
   let lastName = req.body.lastName;
   let address = req.body.address;
   let associationUnit = req.body.associationUnit;
   let mobileNo = req.body.mobileNo;
+  let smobileNo = req.body.smobileNo;
   let landlineCode = req.body.landlineCode;
   let landlineNo = req.body.landlineNo;
   let email = req.body.email;
@@ -289,14 +170,13 @@ app.post('/profile', (req, res) => {
   let spouseDOB = req.body.spouseDOB;
   let maleChildren = req.body.maleChildren;
   let femaleChildren = req.body.femaleChildren;
-  let profilePhoto = req.body.profilePhoto;
   let notes = req.body.notes;
 
-  let qr = `insert into members (firstname, lastname, address, unit, mobile, landcode, landline, email, dob, spouse, sdob, male, female, photo, notes) values ('${firstName}', '${lastName}', '${address}',
-    '${associationUnit}', '${mobileNo}', '${landlineCode}', '${landlineNo}', '${email}', '${dateOfBirth}', '${spouseName}', '${spouseDOB}', '${maleChildren}',
-    '${femaleChildren}', '${profilePhoto}', '${notes}')`;
+  let insert_qr = `insert into members (firstname, lastname, address, unit, mobile, smobile, landcode, landline, email, dob, spouse, sdob, male, female, notes) values ('${firstName}', '${lastName}', '${address}',
+    '${associationUnit}', '${mobileNo}', '${smobileNo}', '${landlineCode}', '${landlineNo}', '${email}', '${dateOfBirth}', '${spouseName}', '${spouseDOB}', '${maleChildren}',
+    '${femaleChildren}', '${notes}')`;
 
-  db.query(qr, (err, result) => {
+  db.query(insert_qr, (err, result) => {
 
     if (err) {
       console.log(err, 'err')
@@ -312,7 +192,7 @@ app.post('/profile', (req, res) => {
 
 
 
-// Update data
+// Update member data
 app.put('/profile/:id', (req, res) => {
 
   let gID = req.params.id;
@@ -321,6 +201,7 @@ app.put('/profile/:id', (req, res) => {
   let address = req.body.address;
   let associationUnit = req.body.associationUnit;
   let mobileNo = req.body.mobileNo;
+  let smobileNo = req.body.smobileNo;
   let landlineCode = req.body.landlineCode;
   let landlineNo = req.body.landlineNo;
   let email = req.body.email;
@@ -329,12 +210,12 @@ app.put('/profile/:id', (req, res) => {
   let spouseDOB = req.body.spouseDOB;
   let maleChildren = req.body.maleChildren;
   let femaleChildren = req.body.femaleChildren;
-  let profilePhoto = req.body.profilePhoto;
   let notes = req.body.notes;
 
-  let qr = `update members set firstname = '${firstName}', lastname = '${lastName}', address = '${address}',    unit = '${associationUnit}', mobile = '${mobileNo}', landcode = '${landlineCode}', landline = '${landlineNo}', email = '${email}', dob = '${dateOfBirth}',  spouse = '${spouseName}', sdob = '${spouseDOB}', male = '${maleChildren}', female = '${femaleChildren}', photo = '${profilePhoto}', notes = '${notes}' where id =${gID}`;
+  console.log("Update members");
+  let update_qr = `update members set firstname = '${firstName}', lastname = '${lastName}', address = '${address}',    unit = '${associationUnit}', mobile = '${mobileNo}', smobile = '${smobileNo}', landcode = '${landlineCode}', landline = '${landlineNo}', email = '${email}', dob = '${dateOfBirth}',  spouse = '${spouseName}', sdob = '${spouseDOB}', male = '${maleChildren}', female = '${femaleChildren}', notes = '${notes}' where id =${gID}`;
 
-  db.query(qr, (err, result) => {
+  db.query(update_qr, (err, result) => {
 
     if (err) {
       console.log(err, 'err')
@@ -356,24 +237,58 @@ app.delete('/profile/:id', (req, res) => {
 
   let qID = req.params.id;
 
-  let qr = `delete from members where id = '${qID}'`;
-
-  db.query(qr, (err, result) => {
+  let id_qr = `select mobile from members where id = ${qID}`;
+  db.query(id_qr, (err, result) => {
 
     if (err) {
       console.log(err, 'err')
     }
+    console.log(result);
+    let data = result;
 
-    res.send({
-      message: 'User deleted'
-    })
+    let qr = `delete from members where id = '${qID}'`;
+
+    console.log("Delete member data");
+    db.query(qr, (err, result) => {
+
+      if (err) {
+        console.log(err, 'err')
+      }
+      else {
+
+        console.log(data[0].mobile);
+        // Delete from users table.
+        let qr = `delete from users where phone = '${data[0].mobile}'`;
+        db.query(qr, (err, result) => {
+          if (err) {
+            console.log(err, 'err')
+          }
+          else {
+            res.send({
+              message: 'User deleted successfully.. Refresh the page to reflect the changes'
+            })
+          }
+        });
+      }
+
+    });
+
+
+
 
   });
 
+
+
 });
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
-});
+
+
+//************************************** MEMBERS TABLE********************************************** */
+
+
+
+//************************************** USERS TABLE********************************************** */
+
 
 //Login component
 app.post('/login', (req, res) => {
@@ -382,7 +297,7 @@ app.post('/login', (req, res) => {
   let password = req.body.password;
 
   // checkemailid
-  let chkemailid = `select * from users where email = '${email}'`;
+  let chkemailid = `select * from users where email = '${email}' OR phone = '${email}'`;
   db.query(chkemailid, async (err, result) => {
     if (err) throw err;
     console.log(result, "#result");
@@ -418,28 +333,212 @@ app.post('/login', (req, res) => {
   });
 });
 
+//Reset password
+
+app.put("/reset-password", (req, res) => {
+  let email = req.body.email;
+  let password = req.body.password;
+  let newpassword = req.body.newpassword;
+
+  //Validate the old password
+  let chk_email_mob_query = `select * from users where email = '${email}' || phone = '${email}'`;
+  db.query(chk_email_mob_query, async (err, result) => {
+    if (err) throw err;
+    console.log(result, "#result");
+    if (result.length > 0) {
+      let data = {
+        name: result[0].name,
+        email: result[0].email,
+        phone: result[0].phone,
+      };
+
+      //    check password
+      let chkpwd = await bcrypt.compare(password, result[0].password);
+      console.log(chkpwd, "chkpwd##");
+
+      if (chkpwd === true) {
+        const token = jwt.sign({ data }, "privatkey");
+        console.log(token, "token##");
+
+        // Insert new password
+        // password decrypt
+        decryptpwd = await bcrypt.hash(newpassword, 10);
+
+        // insert data
+        console.log("Update into users")
+        let updateqry = `update users set password = '${decryptpwd}' where phone ='${result[0].phone}' `;
+        console.log(updateqry);
+        db.query(updateqry, (err, result) => {
+          if (err) throw err;
+          res.send({
+            status: true,
+            msg: "Password updated successfully!",
+          });
+        });
+
+      } else {
+        res.send({
+          status: false,
+          msg: "Invalid Password, Try again..",
+        });
+      }
+    }
+    else {
+
+      res.send({
+        status: false,
+        msg: "Invalid Email or Phone number, Try again..",
+      });
+    }
+
+  });
+
+});
+
+//Admin Reset password
+
+app.put("/reset", (req, res) => {
+  let email = req.body.email;
+  let phone = req.body.phone;
+  let password = req.body.password;
+
+  // first check email id already exit
+  let namechkqry = `select * from users where email = '${email}' || phone ='${phone}' `;
+  console.log(namechkqry);
+  db.query(namechkqry, async (err, result) => {
+
+    if (err) throw err;
+    if (result.length > 0) {
+      //Reset with default password if its an admin
+      // password decrypt
+      decryptpwd = await bcrypt.hash(password, 10);
+      // update users data
+      console.log("Update users with default password");
+      let updateqry = `update users set password = '${decryptpwd}' where phone ='${phone}' `;
+      console.log(updateqry);
+      db.query(updateqry, (err, result) => {
+        if (err) throw err;
+        res.send({
+          status: true,
+          msg: "Password updated successfully",
+        });
+      });
+    }
+  });
+
+});
+
+//   //Validate the old password
+//   let chk_email_mob_query = `select * from users where email = '${email}' OR phone = '${email}'`;
+//   db.query(chk_email_mob_query, async (err, result) => {
+//     if (err) throw err;
+//     console.log(result, "#result");
+//     if (result.length > 0) {
+//       let data = {
+//         name: result[0].name,
+//         email: result[0].email,
+//         phone: result[0].phone,
+//       };
+
+//       //    check password
+//       let chkpwd = await bcrypt.compare(password, result[0].password);
+//       console.log(chkpwd, "chkpwd##");
+
+//       if (chkpwd === true) {
+//         const token = jwt.sign({ data }, "privatkey");
+//         console.log(token, "token##");
+
+//         // Insert new password
+//         // password decrypt
+//         decryptpwd = await bcrypt.hash(newpassword, 10);
+
+//         // insert data
+//         console.log("Update into users")
+//         let updateqry = `update users set password = '${decryptpwd}' where name ='${name}' `;
+//         console.log(updateqry);
+//         db.query(updateqry, (err, result) => {
+//           if (err) throw err;
+//           res.send({
+//             status: true,
+//             msg: "Password updated successfully",
+//           });
+//         });
+
+//       } else {
+//         res.send({
+//           status: false,
+//           msg: "Invalid Password, Try again..",
+//         });
+//       }
+//     }
+//     else {
+
+//       res.send({
+//         status: false,
+//         msg: "Invalid Email or Phone number, Try again..",
+//       });
+//     }
+
+//   });
+
+// });
+
+
 
 //signup 
 
 app.post("/signup", (req, res) => {
   const name = req.body.name;
+  const phone = req.body.phone;
   const email = req.body.email;
   const password = req.body.password;
-  // first check email id already exit
-  let emailchkqry = `select email from users where email = '${email}' `;
-  db.query(emailchkqry, async (err, result) => {
+  // check if the mobile no exists
+  console.log("Insert users");
+  let mobchkqry = `select phone from users where phone LIKE '%${phone}%' `;
+  // console.log(mobchkqry);
+  db.query(mobchkqry, async (err, result) => {
     if (err) throw err;
-    // check email id already exits
+    // check mobile no already exits
     if (result.length > 0) {
       res.send({
         status: false,
-        msg: "Email ID already exits",
+        msg: "Mobile no exists",
       });
-    } else {
+    }
+    else if (email != '') {
+      // first check email id already exit
+      let emailchkqry = `select email from users where email = '${email}' `;
+      db.query(emailchkqry, async (err, result) => {
+        if (err) throw err;
+        // check email id already exits
+        if (result.length > 0) {
+          res.send({
+            status: false,
+            msg: "Email ID already exists",
+          });
+        }
+        else {
+          // password decrypt
+          decryptpwd = await bcrypt.hash(password, 10);
+          // insert into users table
+          let insertqry = `insert into users(name,phone,email,password) values('${name}','${phone}','${email}','${decryptpwd}') `;
+
+          db.query(insertqry, (err, result) => {
+            if (err) throw err;
+            res.send({
+              status: true,
+              msg: "User Registered Successfully",
+            });
+          });
+        }
+      });
+    }
+    else {
       // password decrypt
       decryptpwd = await bcrypt.hash(password, 10);
       // insert data
-      let insertqry = `insert into users(name,email,password) values('${name}','${email}','${decryptpwd}') `;
+      let insertqry = `insert into users(name,phone,email,password) values('${name}','${phone}','${email}','${decryptpwd}') `;
+
       db.query(insertqry, (err, result) => {
         if (err) throw err;
         res.send({
@@ -448,79 +547,65 @@ app.post("/signup", (req, res) => {
         });
       });
     }
+
+  });
+
+
+});
+
+
+
+
+
+
+//searchUsers
+app.post("/users/searchAll", (req, res) => {
+  const name = req.body.name;
+  const phone = req.body.phone;
+  const email = req.body.email;
+  // check if the mobile no exists
+  let userschkqry = `select phone, email from users where phone LIKE '%${phone}%' OR email = '${email}'`;
+  console.log("Search user based on phone and email");
+  db.query(userschkqry, async (err, result) => {
+    if (err) throw err;
+    // check mobile no already exits
+    if (result.length > 0) {
+      res.send({
+        message: 'User data fetched',
+        data: result
+      });
+    } else {
+      res.send({
+        status: false,
+        msg: "No record exists",
+      });
+    }
   });
 });
 
 
-// File upload
+//update users
+app.put("/users/updateUser", (req, res) => {
+  const phone = req.body.phone;
+  const email = req.body.email;
 
-app.post('/upload',  (req, res) => {
-  try {
-     uploadFile(req, res);
-    console.log(req.file)
-
-    if (req.file == undefined) {
-      return res.status(400).send({ message: "Please upload a file!" });
-    }
-
-    res.status(200).send({
-      message: "Uploaded the file successfully: " + req.file.originalname,
-    });
-  } catch (err) {
-    console.log(err);
-
-    if (err.code == "LIMIT_FILE_SIZE") {
-      return res.status(500).send({
-        message: "File size cannot be larger than 2MB!",
-      });
-    }
-
-    res.status(500).send({
-      message: `Could not upload the file: ${req.file.originalname}. ${err}`,
-    });
-  }
-});
-
-//Get the listed file
-
-app.get('/files', (req, res) => {
-  const directoryPath = __basedir + "/resources/static/assets/uploads/";
-
-  fs.readdir(directoryPath, function (err, files) {
+  let qr = `update users set email = '${email}' where phone='${phone}'`;
+  db.query(qr, (err, result) => {
     if (err) {
-      res.status(500).send({
-        message: "Unable to scan files!",
-      });
+      console.log(err, 'err')
     }
 
-    let fileInfos = [];
-
-    files.forEach((file) => {
-      fileInfos.push({
-        name: file,
-        url: baseUrl + file,
-      });
-    });
-
-    res.status(200).send(fileInfos);
+    res.send({
+      message: 'User details updated'
+    })
   });
+
 });
 
 
-// Download the file
+//************************************** USERS TABLE********************************************** */
 
-app.post('/files/:name', (req, res) => {
-  const fileName = req.params.name;
-  const directoryPath = __basedir + "/resources/static/assets/uploads/";
 
-  res.download(directoryPath + fileName, fileName, (err) => {
-    if (err) {
-      res.status(500).send({
-        message: "Could not download the file. " + err,
-      });
-    }
-  });
-});
 
 // requiredtoken
 function requiredtoken(req, res, next) {
